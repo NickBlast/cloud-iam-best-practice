@@ -1,0 +1,19 @@
+{
+  "minimums": {
+    "powershell": "7.3.0",
+    "python": "3.11.0",
+    "azureCli": "2.63.0"
+  },
+  "powershellModules": [
+    { "name": "Az.Accounts",  "version": "3.0.0" },
+    { "name": "Az.Resources", "version": "7.5.0" }
+  ],
+  "powershellOptionalModules": [
+    { "name": "ImportExcel", "version": "7.8.6" }
+  ],
+  "python": {
+    "requirements": "scripts/azure/python/requirements.txt",
+    "constraints":  "scripts/azure/python/constraints.txt",
+    "dev_requirements": "scripts/azure/python/dev-requirements.txt"
+  }
+}
