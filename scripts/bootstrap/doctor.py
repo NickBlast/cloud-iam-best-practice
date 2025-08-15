@@ -7,16 +7,23 @@ import sys
 import os
 import json
 import subprocess
+import argparse
 from datetime import datetime
 from pathlib import Path
 
 def main():
     """Main function to check Python environment."""
-    print("Python Doctor Check")
-    print("=" * 50)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--non-interactive', action='store_true')
+    args = parser.parse_args()
+    
+    if not args.non_interactive:
+        print("Python Doctor Check")
+        print("=" * 50)
     
     # Check Python version
-    print(f"Python version: {sys.version}")
+    if not args.non_interactive:
+        print(f"Python version: {sys.version}")
     
     # Check required packages
     required_packages = [
@@ -36,18 +43,18 @@ def main():
     for package in required_packages:
         try:
             __import__(package.replace('-', '_').split('.')[0])
-            print(f"  ✓ {package}")
+            print(f"  [OK] {package}")
         except ImportError:
-            print(f"  ✗ {package} (MISSING)")
+            print(f"  [MISSING] {package}")
             missing_required.append(package)
     
     print("\nOptional packages:")
     for package in optional_packages:
         try:
             __import__(package.replace('-', '_').split('.')[0])
-            print(f"  ✓ {package}")
+            print(f"  [OK] {package}")
         except ImportError:
-            print(f"  ○ {package} (optional)")
+            print(f"  [OPTIONAL] {package}")
     
     # Check if running in virtual environment
     in_venv = (

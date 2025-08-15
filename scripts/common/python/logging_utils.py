@@ -9,10 +9,14 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, Tuple, Optional
 
+# Constants
+DEFAULT_LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+
 
 def now_utc_iso() -> str:
     """Get current UTC time in ISO format."""
     return datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+
 
 
 def init_logging(script_name: str) -> Tuple[logging.Logger, str, Dict[str, str]]:

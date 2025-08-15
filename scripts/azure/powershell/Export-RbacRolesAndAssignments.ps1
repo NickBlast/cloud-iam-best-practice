@@ -86,6 +86,9 @@
 #requires -version 7.3
 #requires -modules @{ModuleName='Az.Accounts';ModuleVersion='2.10.0'},@{ModuleName='Az.Resources';ModuleVersion='6.0.0'}
 
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $false)]

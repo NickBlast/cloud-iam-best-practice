@@ -29,7 +29,10 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $false)]
-    [string]$BootstrapLogPath = "logs/bootstrap"
+    [string]$BootstrapLogPath = "logs/bootstrap",
+    
+    [Parameter(Mandatory = $false)]
+    [switch]$NonInteractive
 )
 
 # Import shared logging module
@@ -574,68 +577,72 @@ function Main {
     Write-Summary -SummaryData $results
     
     # Output summary to console
-    Write-Host ""
-    Write-Host "=== Doctor Check Summary ===" -ForegroundColor Cyan
-    Write-Host "Run ID: $Script:RunId"
-    Write-Host "Duration: $($duration.TotalSeconds.ToString('F2')) seconds"
-    Write-Host ""
+    if (-not $NonInteractive) {
+        Write-Host ""
+        Write-Host "=== Doctor Check Summary ===" -ForegroundColor Cyan
+        Write-Host "Run ID: $Script:RunId"
+        Write-Host "Duration: $($duration.TotalSeconds.ToString('F2')) seconds"
+        Write-Host ""
+    }
     
-    Write-Host "PowerShell: $($results.checks.powershell.version) - $(if($results.checks.powershell.meets_minimum){"OK"}else{"BELOW MINIMUM"})" -ForegroundColor $(if($results.checks.powershell.meets_minimum){"Green"}else{"Red"})
-    Write-Host "Azure CLI: $(if($results.checks.azure_cli.installed){"Installed ($($results.checks.azure_cli.version))"}else{"Not found"})" -ForegroundColor $(if($results.checks.azure_cli.installed){"Green"}else{"Yellow"})
-    Write-Host "Azure Context: $(if($results.checks.azure_context.has_context){"Connected ($($results.checks.azure_context.account))"}else{"Not connected"})" -ForegroundColor $(if($results.checks.azure_context.has_context){"Green"}else{"Yellow"})
-    Write-Host "Python: $(if($results.checks.python.installed){"Installed ($($results.checks.python.version))"}else{"Not found"})" -ForegroundColor $(if($results.checks.python.installed){"Green"}else{"Red"})
-    Write-Host "Virtual Environment: $(if($results.checks.python.venv_exists){"Exists ($($results.checks.python.package_count) packages)"}else{"Not found"})" -ForegroundColor $(if($results.checks.python.venv_exists){"Green"}else{"Yellow"})
-    
-    Write-Host ""
-    Write-Host "Required Modules:" -ForegroundColor Cyan
-    foreach ($module in $results.checks.powershell_modules.required) {
-        $color = switch ($module.status) {
-            "ok" { "Green" }
-            "outdated" { "Yellow" }
-            "missing" { "Red" }
-            default { "White" }
+    if (-not $NonInteractive) {
+        Write-Host "PowerShell: $($results.checks.powershell.version) - $(if($results.checks.powershell.meets_minimum){"OK"}else{"BELOW MINIMUM"})" -ForegroundColor $(if($results.checks.powershell.meets_minimum){"Green"}else{"Red"})
+        Write-Host "Azure CLI: $(if($results.checks.azure_cli.installed){"Installed ($($results.checks.azure_cli.version))"}else{"Not found"})" -ForegroundColor $(if($results.checks.azure_cli.installed){"Green"}else{"Yellow"})
+        Write-Host "Azure Context: $(if($results.checks.azure_context.has_context){"Connected ($($results.checks.azure_context.account))"}else{"Not connected"})" -ForegroundColor $(if($results.checks.azure_context.has_context){"Green"}else{"Yellow"})
+        Write-Host "Python: $(if($results.checks.python.installed){"Installed ($($results.checks.python.version))"}else{"Not found"})" -ForegroundColor $(if($results.checks.python.installed){"Green"}else{"Red"})
+        Write-Host "Virtual Environment: $(if($results.checks.python.venv_exists){"Exists ($($results.checks.python.package_count) packages)"}else{"Not found"})" -ForegroundColor $(if($results.checks.python.venv_exists){"Green"}else{"Yellow"})
+        
+        Write-Host ""
+        Write-Host "Required Modules:" -ForegroundColor Cyan
+        foreach ($module in $results.checks.powershell_modules.required) {
+            $color = switch ($module.status) {
+                "ok" { "Green" }
+                "outdated" { "Yellow" }
+                "missing" { "Red" }
+                default { "White" }
+            }
+            Write-Host "  $($module.name): $($module.installed_version) (required: $($module.required_version)) - $($module.status.ToUpper())" -ForegroundColor $color
         }
-        Write-Host "  $($module.name): $($module.installed_version) (required: $($module.required_version)) - $($module.status.ToUpper())" -ForegroundColor $color
-    }
-    
-    Write-Host ""
-    Write-Host "Optional Modules:" -ForegroundColor Cyan
-    foreach ($module in $results.checks.powershell_modules.optional) {
-        $color = switch ($module.status) {
-            "ok" { "Green" }
-            "outdated" { "Yellow" }
-            "missing" { "Gray" }
-            default { "White" }
+        
+        Write-Host ""
+        Write-Host "Optional Modules:" -ForegroundColor Cyan
+        foreach ($module in $results.checks.powershell_modules.optional) {
+            $color = switch ($module.status) {
+                "ok" { "Green" }
+                "outdated" { "Yellow" }
+                "missing" { "Gray" }
+                default { "White" }
+            }
+            Write-Host "  $($module.name): $($module.installed_version) (required: $($module.required_version)) - $($module.status.ToUpper())" -ForegroundColor $color
         }
-        Write-Host "  $($module.name): $($module.installed_version) (required: $($module.required_version)) - $($module.status.ToUpper())" -ForegroundColor $color
-    }
-    
-    Write-Host ""
-    Write-Host "Bootstrap Test:" -ForegroundColor Cyan
-    if ($results.checks.bootstrap.script_exists) {
-        $bootstrapColor = if ($results.checks.bootstrap.success) { "Green" } else { "Red" }
-        Write-Host "  Test Script: Found" -ForegroundColor Green
-        Write-Host "  Status: $(if($results.checks.bootstrap.success){"Success"}else{"Failed (exit code: $($results.checks.bootstrap.exit_code))"})" -ForegroundColor $bootstrapColor
-    } else {
-        Write-Host "  Test Script: Not found" -ForegroundColor Red
-    }
-    
-    Write-Host ""
-    if ($results.errors.Count -gt 0) {
-        Write-Host "Errors: $($results.errors.Count)" -ForegroundColor Red
-        foreach ($error in $results.errors) {
-            Write-Host "  - $error" -ForegroundColor Red
+        
+        Write-Host ""
+        Write-Host "Bootstrap Test:" -ForegroundColor Cyan
+        if ($results.checks.bootstrap.script_exists) {
+            $bootstrapColor = if ($results.checks.bootstrap.success) { "Green" } else { "Red" }
+            Write-Host "  Test Script: Found" -ForegroundColor Green
+            Write-Host "  Status: $(if($results.checks.bootstrap.success){"Success"}else{"Failed (exit code: $($results.checks.bootstrap.exit_code))"})" -ForegroundColor $bootstrapColor
+        } else {
+            Write-Host "  Test Script: Not found" -ForegroundColor Red
         }
-    }
-    
-    if ($results.warnings.Count -gt 0) {
-        Write-Host "Warnings: $($results.warnings.Count)" -ForegroundColor Yellow
-        foreach ($warning in $results.warnings) {
-            Write-Host "  - $warning" -ForegroundColor Yellow
+        
+        Write-Host ""
+        if ($results.errors.Count -gt 0) {
+            Write-Host "Errors: $($results.errors.Count)" -ForegroundColor Red
+            foreach ($error in $results.errors) {
+                Write-Host "  - $error" -ForegroundColor Red
+            }
         }
+        
+        if ($results.warnings.Count -gt 0) {
+            Write-Host "Warnings: $($results.warnings.Count)" -ForegroundColor Yellow
+            foreach ($warning in $results.warnings) {
+                Write-Host "  - $warning" -ForegroundColor Yellow
+            }
+        }
+        
+        Write-Host ""
     }
-    
-    Write-Host ""
     
     # Determine exit code
     if ($results.errors.Count -gt 0) {

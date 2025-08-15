@@ -14,6 +14,7 @@ import json
 import sys
 import time
 import logging
+import subprocess
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Set, Tuple
@@ -640,17 +641,19 @@ def main():
     
     # Check if bootstrap is requested
     if args.bootstrap:
-        bootstrap_script = Path(__file__).parent.parent.parent / "bootstrap" / "doctor.py"
-        if bootstrap_script.exists():
-            print("Running bootstrap prerequisites check...")
-            import subprocess
-            result = subprocess.run([sys.executable, str(bootstrap_script), "--non-interactive"])
-            if result.returncode != 0:
-                print(f"Bootstrap failed with exit code {result.returncode}")
-                sys.exit(result.returncode)
-            print("Bootstrap completed successfully")
-        else:
-            print(f"Warning: Bootstrap script not found at {bootstrap_script}")
+        from shutil import which
+        pwsh = which("pwsh") or which("powershell")
+        if not pwsh:
+            print("Bootstrap: PowerShell 7+ (pwsh) not found. Install it or run Install-Prereqs.ps1 manually.", file=sys.stderr)
+            sys.exit(1)
+        bootstrap_ps1 = Path(__file__).resolve().parents[2] / "bootstrap" / "Install-Prereqs.ps1"
+        cmd = [pwsh, "-NoLogo", "-NoProfile", "-File", str(bootstrap_ps1), "-NonInteractive"]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode != 0:
+            print("Bootstrap failed. See logs/bootstrap for details.\n---- stdout ----\n"
+                  f"{result.stdout}\n---- stderr ----\n{result.stderr}", file=sys.stderr)
+            sys.exit(1)
+        print("Bootstrap completed successfully")
     
     # Initialize logging
     logger, run_id, log_paths = init_logging("azure/export_rbac_roles_and_assignments")
